@@ -1,0 +1,48 @@
+services:
+  devcontainer:
+    build: ./backend
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: sleep infinity  # keep container running without auto-starting anything
+    environment:
+      - DATABASE_URL=postgresql://dev:dev@db:5432/art_db
+
+  backend:
+    build: ./backend
+    volumes:
+      - ../shared-data:/app/data
+    working_dir: /app
+    ports:
+      - "8000:8000"
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://dev:dev@db:5432/art_db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - /app/node_modules
+    command: npm run dev
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+
+  db:
+    image: postgres:17
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: art_db
+
+volumes:
+  pgdata:
